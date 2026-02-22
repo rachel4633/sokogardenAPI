@@ -1,10 +1,14 @@
 # import flask and its component
 from flask import *
+import os 
 #import the pymysql module - it helps us to create a connnection between python flask and mysql database
 import pymysql
 # create an application and give it a name
 
 app = Flask(__name__)
+
+#configure the location to where youre product images will be saved on your application
+app.config["UPLOAD_FOLDER"] = "static/images"
 
 #below is the sign up route
 @app.route("/api/signup",methods=["POST"])
@@ -73,7 +77,62 @@ def signin():
             #return the details to the frontend as well as a message 
             return jsonify({"message":"user looged in succesfully","user":user})
     
+# Below is the route for running the application
+
+@app.route("/api/add_product",methods = ["POST"])
+def Addproducts():
+    if request.method == "POST":
+        #extract the data enterd on the form
+        product_name =request.form["product_name"]
+        product_description =request.form["product_description"]
+        product_cost =request.form["product_cost"]
+        #for the product photo we shall fetch it from the files as shown below
+
+        product_photo =request.files["product_photo"]
+
+        # extract the file name of the product photo
+        filename = product_photo.filename
+        # by use of the os mudule(operating system) we can extract the file path where the image is currently saved 
+        photo_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+
+        #save the product photo image into the new location
+        product_photo.save(photo_path)
+
+
+        #print them out to test you are are receiving the details sent with the request
+        # print(product_name,product_description,product_cost,product_photo)
+
+        #establish a connection
+        connection = pymysql.connect(host="localhost",user="root",password="",database="sokogardenonline")
+
+        #create a cursor
+        cursor = connection.cursor()
+
+        #structure the sql query to insert the details to the database
+        sql = "INSERT INTO product_details(product_name, product_description, product_cost, product_photo) VALUES (%s, %s, %s, %s)"
+
+        #create the tuple that will hold the data from the which are current held onto the different variables declared.
+        data = (product_name,product_description,product_cost,filename)
+
+        # use the cursor to execute the sql you replace the placeholders with the actual data.
+        cursor.execute(sql, data)
+
+        #commit the changes to the database
+        connection.commit()
+
+
+        return jsonify({"message" : "product added successfully"})
     
+
+
+
+
+
+
+
+        return jsonify({"message" :"Add product route accessed"})
+
+
     
 
 
